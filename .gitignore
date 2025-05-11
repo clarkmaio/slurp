@@ -1,0 +1,9 @@
+
+.vscode
+.env
+
+*.xml
+*.pymc
+*.pyc
+
+__pycache__

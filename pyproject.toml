@@ -1,0 +1,22 @@
+
+
+[project]
+name = "slurp"
+version = "0.1.0"
+description = "A package to easily handle spline neuralnetwork"
+authors = [
+  { name="Andrea Maioli", email="maioliandrea0@gmail.com" },
+]
+requires-python = ">=3.11" 
+
+dependencies = [
+    "torch",
+    "polars",
+    "scipy",
+    "altair",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"] # Dipendenze necessarie per costruire il pacchetto
+build-backend = "setuptools.build_meta" # Il backend effettivo che esegue la build
+
