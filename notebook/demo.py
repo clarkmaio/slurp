@@ -10,8 +10,7 @@ app = marimo.App(width="medium")
 def _():
     import sys
     import os
-    sys.path.append('/home/clarkmaio/workspace/slurp/slurp')
-    sys.path.append('/home/clarkmaio/workspace/slurp/')
+    sys.path.append(os.getcwd())
     return
 
 
@@ -31,9 +30,8 @@ def _():
     alt.data_transformers.enable("vegafusion")
 
     from slurp.src.module.spline import SplineModule
-    from slurp.src.module.cyclic_spline import CyclicSplineModule
     from slurp import Gnam, Spline, CyclicSpline
-    return Gnam, Spline, mo, np, pl, plt
+    return CyclicSpline, Gnam, Spline, mo, np, pl, plt
 
 
 @app.cell
@@ -62,7 +60,7 @@ def _(end_range, n_knots, np):
     noise = 0.3 * np.random.randn(N)
     yy = np.sin(2 * np.pi * xx) * np.exp(xx/5) + noise
     knots = np.linspace(0, end_range.value, n_knots.value)
-    return knots, xx, yy
+    return xx, yy
 
 
 @app.cell
@@ -76,13 +74,12 @@ def _(np, pl, xx, yy):
 
 
 @app.cell
-def _(Gnam, Spline, X, knots, y):
+def _(CyclicSpline, Gnam, Spline, X, end_range, np, y):
     gm = Gnam(
-        #design = CyclicSpline(order=2, term='x', period=1., bias=False) * Spline(knots=knots, order=3, term='x')
-        design = Spline(knots=knots, order=3, term='x')
+        design = CyclicSpline(order=2, term='x', period=1., bias=False) * Spline(knots=np.linspace(0, end_range.value, 8), order=3, term='x')
     )
 
-    gm.fit(X, y, epochs=5000, lr = 0.005, weight_decay=0.0, gamma=0.0)
+    gm.fit(X, y, epochs=5000, lr = 0.001, weight_decay=0.00, gamma=0.00)
     yout = gm.predict(X)
     return gm, yout
 
@@ -123,12 +120,6 @@ def _(components, mo):
     mo.ui.altair_chart(
         (components.plot.line(x='x', y='CS(x)') | components.plot.line(x='x', y='S(x)'))
     )
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md(r"""# Viz""")
     return
 
 
