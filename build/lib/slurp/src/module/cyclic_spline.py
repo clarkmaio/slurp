@@ -6,9 +6,9 @@ import numpy as np
 import polars as pl
 from typing import List
 
-from slurp.src.module.core import GnAMModule
+from slurp.src.module.core import GnamModule
 
-class csModule(GnAMModule):
+class CyclicSplineModule(GnamModule):
     def __init__(self, period: float, order: int = 3, bias: bool = True):
         super().__init__()
         
@@ -47,24 +47,27 @@ class csModule(GnAMModule):
         x_sin_cos = x.repeat(1, 2 * order)
         for i in range(order):
             x_sin_cos[:, 2 * i] = torch.sin((i + 1) * x_sin_cos[:, 2 * i])
-            x_sin_cos[:, 2 * i + 1] = torch.cos((i + 1) * x_sin_cos[:, 2 * i + 1])
+            x_sin_cos[:, 2 * i + 1] = torch.cos((i + 1) * x_sin_cos[:, 2 * i])
         return x_sin_cos
 
     def forward(self, x):
         x = self._normalize_period(x, period=self.period)
         x = self._build_sincos(x, order=self.order)
-        out = self.linear(x.to(torch.float32))    
+        out = self.linear(x)    
         return out
     
-    def grad(self, x):
-        x = x.clone().detach().requires_grad_(True)
-        x_grad = torch.autograd.grad(self(x), x, create_graph=True)[0]
-        return x_grad
+        
+    def regularisation(self, x):
+        """
+        Compute regularisation term |f''(x)|^2
+        """
+        return 0
 
 
-class cs(csModule):
+
+class CyclicSpline(CyclicSplineModule):
     def __init__(self, term: str, period: float, order: int = 3, bias: bool = False, tag: str = None):
-        super(cs, self).__init__(period=period, order=order, bias=bias)
+        super(CyclicSpline, self).__init__(period=period, order=order, bias=bias)
         
         self._term = term
         self._period = period
@@ -73,7 +76,7 @@ class cs(csModule):
         
         self._tag = tag
         if tag is None:
-            self._tag = f'cs({term})'
+            self._tag = f'CS({term})'
 
     @property
     def tag(self):
@@ -97,7 +100,12 @@ class cs(csModule):
     
     def forward(self, x: pl.DataFrame):
         x = x.select(pl.col(self.term)).to_torch()
-        out = super(cs, self).forward(x)
+        out = super(CyclicSpline, self).forward(x)
+        return out
+    
+    def regularisation(self, x: pl.DataFrame):
+        x = x.select(pl.col(self.term)).to_torch()
+        out = super(CyclicSpline, self).regularisation(x)
         return out
     
     def to_latex(self, compact: bool = False):
@@ -105,9 +113,9 @@ class cs(csModule):
         Return the latex representation of the spline
         """
         if compact:
-            return fr"cs\left( {self.term} \right)"
+            return fr"CS\left( {self.term} \right)"
         else:
-            return fr"cs\left( {self.term}, period={self.period}, order={self.order} \right)"
+            return fr"CS\left( {self.term}, period={self.period}, order={self.order} \right)"
     
     def predict(self, X: pl.DataFrame, index: List = None):
         """
@@ -119,35 +127,10 @@ class cs(csModule):
         if index:
             y_pred = pl.concat([X.select(index), y_pred])
         return y_pred
-    
-    def predict_basis(self, X: pl.DataFrame, index: List = None, scaled: bool = True):
-        """
-        Return the basis functions values
-        """
 
-        x = X.select(pl.col(self.term)).to_torch()
-        x = self._normalize_period(x, period=self.period)
-        x_sin_cos = self._build_sincos(x, order=self.order)
-
-        if scaled:
-            x_sin_cos = self.linear.weight * x_sin_cos
-
-        basis_functions = []
-        for i in range(self.order):
-            sin_col = pl.DataFrame({f'{self.tag}_sin_{i+1}': x_sin_cos[:, 2 * i].detach().numpy().flatten()})
-            cos_col = pl.DataFrame({f'{self.tag}_cos_{i+1}': x_sin_cos[:, 2 * i + 1].detach().numpy().flatten()})
-            basis_functions.append(sin_col)
-            basis_functions.append(cos_col)
-
-        y_basis = pl.concat(basis_functions, how='horizontal')
-
-        if index:
-            y_basis = self.add_index(y=y_basis, X=X, index=index)
-        
-        return y_basis
-    
-    def grad(self, x):
-        x = x.select(pl.col(self.term)).to_torch()
-        return super(cs, self).grad(x)
-
-
+if __name__ == '__main__':
+    x = torch.tensor([0, 1, 2, 3, 4, 2, 2, 2, 2, 2, 2, 2]).reshape(-1, 1)
+    period = 5
+    order = 3
+    cs = CyclicSplineModule(period=period, order=order)
+    output = cs(x)

@@ -10,7 +10,7 @@ app = marimo.App(width="medium")
 def _():
     import sys
     import os
-    sys.path.append(os.getcwd())
+    sys.path.append('/home/clarkmaio/workspace/slurp/')
     return
 
 
@@ -29,9 +29,8 @@ def _():
 
     alt.data_transformers.enable("vegafusion")
 
-    from slurp.src.module.spline import SplineModule
-    from slurp import Gnam, Spline, CyclicSpline
-    return CyclicSpline, Gnam, Spline, mo, np, pl, plt
+    from slurp import Gnam, s, cs, l, f
+    return Gnam, cs, l, mo, np, pl, plt
 
 
 @app.cell
@@ -74,12 +73,16 @@ def _(np, pl, xx, yy):
 
 
 @app.cell
-def _(CyclicSpline, Gnam, Spline, X, end_range, np, y):
+def _(Gnam, X, cs, l, y):
     gm = Gnam(
-        design = CyclicSpline(order=2, term='x', period=1., bias=False) * Spline(knots=np.linspace(0, end_range.value, 8), order=3, term='x')
+        design =  (
+            cs(term='x', order=4, period=5)
+            + l(term='x', bias=True)
+        
+        )
     )
 
-    gm.fit(X, y, epochs=5000, lr = 0.001, weight_decay=0.00, gamma=0.00)
+    gm.fit(X, y, epochs=5000, lr = 0.001, weight_decay=0.00, gamma=0.1)
     yout = gm.predict(X)
     return gm, yout
 
@@ -89,7 +92,7 @@ def _(gm, mo):
     mo.md(
         fr'''
         $$
-        {gm.latex_design(compact=True)}
+        {gm.to_latex(compact=False)}
         $$
         '''
     )
@@ -112,14 +115,7 @@ def _(X, plt, xx, yout, yy):
 @app.cell
 def _(X, gm):
     components = gm.predict_components(X, index=['x'])
-    return (components,)
-
-
-@app.cell
-def _(components, mo):
-    mo.ui.altair_chart(
-        (components.plot.line(x='x', y='CS(x)') | components.plot.line(x='x', y='S(x)'))
-    )
+    components.head()
     return
 
 

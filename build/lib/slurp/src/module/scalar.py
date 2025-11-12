@@ -1,9 +1,9 @@
 
 import torch
 import torch.nn as nn
-from slurp.src.module import GnAMModule
+from slurp.src.module import GnamModule
 
-class Scalar(GnAMModule):
+class Scalar(GnamModule):
     def __init__(self):
         super(Scalar, self).__init__()
         self.alpha = nn.Parameter(torch.randn(1), requires_grad=True)

@@ -1,0 +1,17 @@
+Metadata-Version: 2.2
+Name: slurp
+Version: 0.1.0
+Summary: A package to easily handle spline neuralnetwork
+Home-page: https://github.com/clarkmaio/slurp
+Author: andrea maioli
+Author-email: Andrea Maioli <maioliandrea0@gmail.com>
+Requires-Python: >=3.7
+Description-Content-Type: text/markdown
+Requires-Dist: torch
+Requires-Dist: polars
+Requires-Dist: scipy
+Requires-Dist: altair
+Dynamic: author
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: requires-python

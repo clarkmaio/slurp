@@ -3,12 +3,12 @@
 
 
 import torch
-from slurp.src.module.core import GnAMModule
+import torch.nn as nn
+from slurp.src.module import GnamModule
 import polars as pl
-from typing import List
 
 
-class fModule(GnAMModule):
+class FactorModule(GnamModule):
     def __init__(self, num_classes: int):
         super().__init__()
         
@@ -25,14 +25,8 @@ class fModule(GnAMModule):
         x_out = self.alpha(x_onehot)
         return x_out
     
-    def grad(self, x):
-        x = x.clone().detach().requires_grad_(True)
-        x_grad = torch.autograd.grad(self(x), x, create_graph=True)[0]
-        return x_grad
 
-    
-
-class f(fModule):
+class Factor(FactorModule):
     def __init__(self, term: str, num_classes: int, tag: str = None):
         super().__init__(num_classes=num_classes)
         
@@ -41,7 +35,7 @@ class f(fModule):
 
         self._tag = tag
         if tag is None:
-            self._tag = f'f({term})'
+            self._tag = f'F({term})'
 
     @property
     def tag(self):
@@ -57,27 +51,12 @@ class f(fModule):
     
     def forward(self, x: pl.DataFrame):
         x = x.select(pl.col(self.term)).to_torch()
-        x_out = super(f, self).forward(x)
+        x_out = super(Factor, self).forward(x)
         return x_out
 
     def to_latex(self, compact: bool = False):
         if compact:
-            return fr"f\left({self.term}\right)"
+            return fr"F\left({self.term}\right)"
         else:
             return fr"f\left({self.term}, num_classes={self.num_classes}\right)"
 
-
-    def predict(self, X: pl.DataFrame, index: List = None):
-        """
-        Predict the spline value for a given input
-        """
-        y_pred = self.forward(X)
-        y_pred = pl.DataFrame({self.tag: y_pred.detach().numpy().flatten()})
-
-        if index:
-            y_pred = pl.concat([X.select(index), y_pred])
-        return y_pred
-    
-    def grad(self, x):
-        x = x.select(pl.col(self.term)).to_torch()
-        return super(f, self).grad(x)

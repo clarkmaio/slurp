@@ -9,5 +9,5 @@ The whole model is written in torch. Model interface `gnam` works only with `pol
 ## Small demo
 
 ```
-from slurp import gnam, Spline
+marimo run notebok/demo.py
 ```

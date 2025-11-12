@@ -4,55 +4,37 @@ from typing import List
 import torch.nn as nn
 import torch
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
 from slurp.src.module.core import OperationModule
 
-class GnAM():
+class Gnam():
     def __init__(self, design: nn.Module):
         self._design = design
-        self._loss_history = pl.DataFrame()
+        self._loss_history = []
         
 
     @property
     def design(self):
         return self._design
-    
-    @property
-    def loss_history(self):
-        return self._loss_history
 
 
-    def fit(self, X: pl.DataFrame, y: pl.Series, 
-            epochs: int = 100, 
-            batch_size: int = None,
-            eval_set: tuple = None,
-            criterion = nn.MSELoss(), 
-            lr=0.01, weight_decay=0.01, gamma: float = 0.):
+    def fit(self, X: pl.DataFrame, y: pl.Series, epochs: int = 100, criterion = nn.MSELoss(), lr=0.01, weight_decay=0.01, gamma: float = 0.):
         
         # TODO REFACTOR
-        # 1. Handle mini-batch training
-        # 2. Handle eval_set
-        # 3. lr scheduling
-
-        self.design.train()
         optimizer = torch.optim.AdamW(params = self._design.parameters(), lr=lr, weight_decay=weight_decay)
         for epoch in (pbar:=tqdm(range(epochs))):
             optimizer.zero_grad()
-            y_pred = self.design(X)
+            y_pred = self._design(X)
             loss = criterion(y_pred, torch.tensor(y, dtype=torch.float32).unsqueeze(1))
 
             # Apply constraint method
             # TODO Handle constraints
-            # loss += gamma*self.design.regularisation(X.to_torch())
+            loss += gamma*self._design.regularisation(X)
 
             loss.backward()
             optimizer.step()
 
-            self._loss_history = self._loss_history.vstack(pl.DataFrame({'epoch': [epoch],
-                                                                         'train_loss': [loss.item()], 
-                                                                         'val_loss': [None],
-                                                                         'lr': [optimizer.param_groups[0]['lr']]}))
+            self._loss_history.append(loss.item())
             if epoch % 100 == 0:
                 pbar.set_description(f"Epoch {epoch+1}/{epochs} - Loss: {loss.item():.4f}")
         
@@ -62,7 +44,6 @@ class GnAM():
         Make predictions
         If index is True concat columns index_col to the output
         """
-        self._design.eval()
         y_pred = self._design(X)
         y_pred = pl.DataFrame({'gnam': y_pred.detach().numpy().flatten()})
 
@@ -114,30 +95,11 @@ class GnAM():
 
     def fit_diagnostic(self):
         """
-        Simple plot to visualise training loss
+        Return training diagnostics
         """
+        pass
 
-        fig, ax = plt.subplots(nrows=2, ncols=1, figsize=(6, 4))
-
-        ax[0].plot(self.loss_history['epoch'], self.loss_history['train_loss'], label='Train Loss', color='blue')     
-        ax[0].legend(loc='upper right', shadow=True)
-        ax[0].set_ylabel('Loss')
-
-        ax[1].plot(self.loss_history['epoch'], self.loss_history['lr'], label='Learning rate', color='black')
-        ax[1].set_xlabel('Epoch')
-        ax[1].legend(loc='upper right', shadow=True)
-
-        if not self.loss_history['val_loss'].drop_nulls().is_empty():
-            min_val_epoch = self.loss_history['val_loss'].arg_min()
-            ax[0].plot(self.loss_history['epoch'], self.loss_history['val_loss'], label='Validation Loss', color='orange')
-            ax[0].axvline(x=min_val_epoch, color='gray', linestyle='--', alpha=0.7)
-            ax[1].axvline(x=min_val_epoch, color='gray', linestyle='--', alpha=0.7)
-
-        fig.suptitle('Fit diagnostic', fontweight='bold')
-        plt.tight_layout()
-
-
-    def to_latex(self, compact: bool = False):
+    def latex_design(self, compact: bool = False):
         """
         Return design formula in LaTeX format.
         If compact is True, return a compact version of the formula without parameters
