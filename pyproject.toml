@@ -2,7 +2,7 @@
 
 [project]
 name = "slurp"
-version = "0.1.0"
+version = "0.2.0"
 description = "A package to easily handle spline neuralnetwork"
 authors = [
   { name="Andrea Maioli", email="maioliandrea0@gmail.com" },
@@ -10,11 +10,20 @@ authors = [
 requires-python = ">=3.11" 
 
 dependencies = [
-    "torch",
     "polars",
-    "scipy",
-    "altair",
+    "autograd",
+    "scipy"
 ]
+
+
+[project.optional-dependencies]
+torch = [
+    "torch>=2.0.0"
+]
+
+
+
+
 
 [build-system]
 requires = ["setuptools>=61.0"]
