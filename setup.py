@@ -4,8 +4,8 @@ with open('README.md', 'r', encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name='slurpgnam', # Il nome del tuo pacchetto su PyPI
-    version='0.1.0', # La versione attuale del tuo pacchetto
+    name='pyslurp',
+    version='0.2.0',
     author='andrea maioli',
     author_email='maioliandrea0@gmail.com',
     description='Package to build spline neuralnetwork with syntax similar to GAM packages',
@@ -22,9 +22,19 @@ setup(
     ],
     python_requires='>=3.7',
     install_requires=[
-            "torch",
+            "autograd",
             "polars",
             "scipy",
-            "altair",
     ],
+    # **extras_require={
+    #     'torch': [
+    #         "torch"
+    #     ],
+    #     'all': [
+    #         "autograd",
+    #         "polars",
+    #         "scipy",
+    #         "torch"
+    #     ]
+    # },**
 )
