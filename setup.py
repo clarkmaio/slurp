@@ -5,7 +5,7 @@ with open('README.md', 'r', encoding='utf-8') as f:
 
 setup(
     name='pyslurp',
-    version='0.2.0',
+    version='0.2.1',
     author='andrea maioli',
     author_email='maioliandrea0@gmail.com',
     description='Package to build spline neuralnetwork with syntax similar to GAM packages',
